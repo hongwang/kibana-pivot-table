@@ -122,15 +122,30 @@ uiModules.get('app/pivot_table', [])
   //    { "ip: Descending": "140.87.53.85", "memory: Descending": 98560, "Count": 1 },
   //    { "ip: Descending": "140.87.53.85", "memory: Descending": 140960, "Count": 1 }]
   var processEntry = function(tabifyData){
-    var columnsName =[];
     var result = [];
+    if (tabifyData.tables.length <= 0) {
+        return result;
+    }
+    var columnsName =[];
+    var dateFormats = [];
     for (var i = 0; i < tabifyData.tables[0]["columns"].length; i++) {
       columnsName.push(tabifyData.tables[0]["columns"][i]["title"]);
+      var aggConfig = tabifyData.tables[0]["columns"][i]["aggConfig"];
+      var dateFormat = null;
+      if (aggConfig.params.field && aggConfig.params.field.type === "date" && aggConfig.params.json && aggConfig.params.json.length > 0) {
+        var json = JSON.parse(aggConfig.params.json);
+        if (json.format) {
+          dateFormat = json.format;
+        }
+      }
+      dateFormats.push(dateFormat);
     }
     for (var rows = 0; rows < tabifyData.tables[0]["rows"].length; rows++) {
       var tempObj={};
       for (var columns = 0; columns < columnsName.length; columns++) {
-        tempObj[columnsName[columns]]=tabifyData.tables[0]["rows"][rows][columns];
+        var value = tabifyData.tables[0]["rows"][rows][columns];
+        var dateFormat = dateFormats[columns];
+        tempObj[columnsName[columns]] = dateFormat == null ? value : moment(value).format(dateFormat);
       }
       result.push(tempObj);
     }
